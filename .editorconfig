@@ -1,0 +1,32 @@
+# EditorConfig ayuda a mantener estilos de codificación consistentes entre editores e IDEs.
+# Más información en: https://editorconfig.org
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.ts]
+quote_type = single
+ij_typescript_use_double_quotes = false
+indent_size = 2
+
+[*.json]
+indent_style = space
+indent_size = 2
+
+[*.{js,jsx,tsx}]
+indent_style = space
+indent_size = 2
+
+[*.html]
+indent_style = space
+indent_size = 2
+
+[*.md]
+max_line_length = off
+trim_trailing_whitespace = false

@@ -1,0 +1,51 @@
+{
+  "name": "froovo",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json && npm run copy",
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "copy": "node utils/copyContent.cjs",
+    "upload": "npm run build && npm publish",
+    "prepublishOnly": "npm run build"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    "/": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "examples"
+  ],
+  "author": "kkokotero",
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.0",
+    "@eslint/js": "^9.22.0",
+    "@types/cors": "^2.8.17",
+    "@types/node": "^22.14.1",
+    "@typescript-eslint/eslint-plugin": "^7.8.0",
+    "@typescript-eslint/parser": "^7.8.0",
+    "eslint": "^8.57.1",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-airbnb-typescript": "^18.0.0",
+    "eslint-config-prettier": "^10.1.1",
+    "eslint-import-resolver-typescript": "^3.9.1",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-prettier": "^5.2.3",
+    "eslint-plugin-unused-imports": "^4.1.4",
+    "globals": "^16.0.0",
+    "prettier": "^3.5.3",
+    "tsc-alias": "^1.8.11"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
