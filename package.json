@@ -2,6 +2,7 @@
   "name": "froovo",
   "module": "index.ts",
   "type": "module",
+  "version": "1.0.4",
   "scripts": {
     "build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json && npm run copy",
     "lint": "eslint .",
@@ -13,7 +14,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
-    "/": {
+    "./server": {
       "import": "./dist/index.js",
       "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
@@ -21,11 +22,12 @@
   },
   "files": [
     "dist",
-    "examples"
+    "examples",
+    "assets"
   ],
   "author": "kkokotero",
   "license": "MIT",
-  "private": true,
+  "private": false,
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.0",
     "@eslint/js": "^9.22.0",

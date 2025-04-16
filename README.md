@@ -1,3 +1,5 @@
+# Froovo
+
 <img src="./assets/banner.svg" height="300"/>
 
 **Froovo** is a lightweight, fast, and modular web server designed for modern applications. Built with TypeScript and optimized for performance and simplicity.
@@ -57,7 +59,7 @@ npm install froovo
 ## Quick Start
 
 ```ts
-import { Server, Request, Response } from "froovo";
+import { Server, Request, Response } from "froovo/server";
 
 const app = new Server();
 
@@ -85,7 +87,7 @@ Our goal is to provide just what you need to maximize performance and efficiency
 In the `examples/` folder you’ll find various use cases; here’s a WebSocket example:
 
 ```ts
-import { Server, Socket } from "froovo";
+import { Server, Socket } from "froovo/server";
 
 const app = new Server();
 
