@@ -1,4 +1,4 @@
-import froovo from "../dist/index.js";
+import froovo from "../dist/src/index.js";
 
 const app = froovo();
 

@@ -31,7 +31,7 @@ export default [
     languageOptions: {
       parser: tsParser,
       parserOptions: {
-        project: './tsconfig.test.json',
+        project: './tsconfig.json',
         tsconfigRootDir: import.meta.dirname,
         sourceType: 'module',
       },
@@ -50,7 +50,7 @@ export default [
         node: true
       },
       'import/parsers': {
-        '@typescript-eslint/parser': ['.ts', '.tsx']
+        '@typescript-eslint/parser': ['.ts', '.tsx', '.js']
       }
     },
     rules: {
@@ -89,12 +89,6 @@ export default [
           leadingUnderscore: 'allow',
         }
       ]
-    }
-  },
-  {
-    files: ['**/*.js'],
-    rules: {
-      '@typescript-eslint/no-var-requires': 'off',
     }
   }
 ];

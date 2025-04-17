@@ -6,7 +6,7 @@
         "moduleResolution": "classic",
         "baseUrl": "./",
         "outDir": "dist",
-        "rootDir": "./src",
+        "rootDir": "./",
         "esModuleInterop": true,
         "strict": true,
         "moduleDetection": "force",
@@ -33,14 +33,14 @@
         "strictNullChecks": true,
         "types": ["node"]
     },
-    "include": ["src/**/*", "src/uWebSockets"],
+    "include": ["src/**/*"],
     "exclude": ["dist/**/*"],
     "tsc-alias": {
         "verbose": false,
         "resolveFullPaths": true,
         "fileExtensions": {
             "inputGlob": "{js,jsx,mjs}",
-            "outputCheck": ["js", "json", "jsx", "mjs"]
+            "outputCheck": ["js", "json", "jsx", "mjs", "cjs"]
         }
     }
 }

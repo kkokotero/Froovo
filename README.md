@@ -1,12 +1,12 @@
 # Froovo
 
-<img src="./assets/banner.svg" height="300"/>
+<img src="./misc/banner.svg" height="300"/>
 
 **Froovo** is a lightweight, fast and modular web server designed for modern applications. It is built in TypeScript and optimized to deliver high performance with a simple yet powerful architecture.
 
 **Froovo** leverages a library written in C++ (based on uWebSockets.js) to achieve exceptional speeds and high efficiency in connection handling. Its main goal is to simplify development on this technology, adding practical functionalities and key enhancements to facilitate the creation of robust and scalable applications.
 
-**This project has a [CODE_OF_CONDUCT][].**
+**This project has a [Code of Conduct](./CODE_OF_CONDUCT.md).**
 
 ---
 
@@ -133,5 +133,3 @@ See the [Contributing Guide](CONTRIBUTING.md) for more details.
 MIT License © [kkokotero](https://github.com/kkokotero)
 
 [CODE_OF_CONDUCT]: ./CODE_OF_CONDUCT.md
-[CONTRIBUTING.md]: ./CONTRIBUTING.md
-[LICENSE]: ./LICENSE.md

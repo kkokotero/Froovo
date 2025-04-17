@@ -62,48 +62,57 @@ export class Server {
    * @param path The route path for this method.
    * @param callbacks The list of middlewares to handle the request.
    */
+  // Server.ts (modificación en handleMethod)
   private handleMethod(
     method: 'get' | 'post' | 'put' | 'delete' | 'patch' | 'options' | 'any',
     path: string,
-    ...callbacks: Callback[] // Middlewares to apply
+    ...callbacks: Callback[]
   ) {
-    this.app[method](path, async (res: HttpResponse, req: HttpRequest) => {
-      // Create custom Request and Response objects
+    this.app[method](path, (res: HttpResponse, req: HttpRequest) => {
       const request = new Request(req, res);
       const response = new Response(res);
+      let aborted = false;
 
-      let i = 0;
+      let index = 0;
 
-      // The `next` function to call the next middleware in the chain
-      const next = (): void => {
-        if (i >= callbacks.length) return; // Exit if no more middlewares
-        const middleware = callbacks[i++];
+      res.onAborted(() => {
+        aborted = true;
+        response.ended = true;
+      });
 
-        // If the middleware is a function, invoke it
-        if (typeof middleware !== 'function') return;
-        if (
-          typeof middleware === 'function' &&
-          middleware.constructor.name === 'AsyncFunction'
-        )
-          throw new Error('Error: Asynchronous tasks not allowed'); // Prevent async functions in middleware
+      const dispatch = async (): Promise<void> => {
+        if (aborted || response.ended) return;
+
+        const mw = callbacks[index++];
+
+        if (!mw) {
+          if (!response.ended) response.end();
+          return;
+        }
 
         try {
-          // Call the middleware with request, response, and next callback
-          middleware(request, response, next);
-        } catch (error) {
-          // Log errors from middlewares
-          console.error('Middleware Error:', error);
+          const result = mw(request, response, () => dispatch());
+
+          if (result instanceof Promise) {
+            await result;
+          }
+        } catch (e) {
+          console.error('Middleware Error:', e);
+          if (!response.ended) {
+            response.status(500).end();
+          }
         }
+
+        if (!response.ended) await dispatch();
       };
 
-      next(); // Begin processing middlewares
-
-      // If the response is not ended by the middleware, end the response
-      if (!response.ended) {
-        response.end();
-      }
+      (async () => {
+        await dispatch();
+        if (!aborted && !response.ended) {
+          response.end();
+        }
+      })();
     });
-
     return this;
   }
 
@@ -113,16 +122,20 @@ export class Server {
    * @returns The current instance of the Server.
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public route(config: Record<string, any>) {
-    const { method, path } = config;
+  public route(...configs: Record<string, any>[]) {
+    // eslint-disable-next-line no-unreachable-loop
+    for (const config of configs) {
+      const { method, path } = config;
 
-    if (method === 'ws') {
-      return this.ws(path, config['config']);
+      if (method === 'ws') {
+        return this.ws(path, config['config']);
+      }
+
+      const middlewares = config['middlewares'] ?? [];
+
+      this.handleMethod(method, path, ...middlewares);
     }
-
-    const middlewares = config['middlewares'] ?? [];
-
-    return this.handleMethod(method, path, ...middlewares);
+    return this;
   }
 
   // Convenience methods for each HTTP method (GET, POST, PUT, DELETE, PATCH, OPTIONS)
@@ -171,10 +184,22 @@ export class Server {
    * @returns The current instance of the Server.
    */
   public listen(port: number | string, ...callbacks: (() => void)[]): this {
-    this.app.listen(Number(port), (listenSocket) => {
+    const parsedPort = Number(port);
+
+    // eslint-disable-next-line no-restricted-globals
+    if (isNaN(parsedPort)) {
+      throw new Error(`Invalid port: ${port}`);
+    }
+
+    this.app.listen(parsedPort, (listenSocket) => {
       if (listenSocket) {
-        // Invoke all provided callbacks when the server successfully starts
-        for (const callback of callbacks) callback();
+        callbacks.forEach((callback) => {
+          try {
+            callback();
+          } catch (error) {
+            console.error('Listen callback error:', error);
+          }
+        });
       }
     });
     return this;
@@ -186,8 +211,12 @@ export class Server {
    * @returns The current instance of the Server.
    */
   public close(...callbacks: (() => void)[]) {
-    this.app.close(); // Close the app
-    for (const callback of callbacks) callback(); // Execute callbacks
+    try {
+      this.app.close();
+      callbacks.forEach((callback) => callback());
+    } catch (error) {
+      console.error('Server close error:', error);
+    }
     return this;
   }
 

@@ -1,4 +1,4 @@
-import { Server, Router } from "../dist/index.js";
+import { Server, Router } from "../dist/src/index.js";
 
 const app = new Server();
 

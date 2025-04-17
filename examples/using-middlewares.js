@@ -1,8 +1,8 @@
-import froovo from "../dist/index.js";
+import froovo from "../dist/src/index.js";
 
 const app = froovo();
 
-function middleware(request, _response, next) {
+async function middleware(request, _response, next) {
   console.log(`Middleware activated for route: ${request.url}`);
   next();
 }

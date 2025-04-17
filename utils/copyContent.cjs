@@ -22,6 +22,6 @@ function copyFolderContent(src, dest) {
 }
 
 const srcDir = path.resolve(process.cwd(), 'src/uWebSockets');
-const destDir = path.resolve(process.cwd(), 'dist/uWebSockets');
+const destDir = path.resolve(process.cwd(), 'dist/src/uWebSockets');
 
 copyFolderContent(srcDir, destDir);

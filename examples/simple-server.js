@@ -1,9 +1,9 @@
-import froovo from "../dist/index.js";
+import froovo from "../dist/src/index.js";
 
 const app = froovo();
 
 app.get("/", (_request, response) => {
-  response.end("Hello, World!");
+  response.write("Hello, World!");
 });
 
 app.listen(3000, () => {

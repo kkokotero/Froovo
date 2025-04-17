@@ -6,204 +6,199 @@
 import { HttpRequest, HttpResponse } from '../uWebSockets/index';
 
 /**
- * The `Request` class encapsulates an HTTP request in a more manageable form,
- * providing convenient access to common request properties like headers, query
- * parameters, cookies, body, etc. This class abstracts the interaction with the
- * underlying HTTP request and provides utility methods for easier access to request data.
+ * Represents a standalone HTTP request abstraction built on top of uWebSockets.js.
+ * This class provides lazy parsing and access to headers, query parameters, cookies,
+ * request body, and utility methods for interacting with the HTTP request and response.
  */
 export class Request {
-  private _url?: string;
+  private _url: string;
 
-  private _method?: string;
+  private _method: string;
 
-  private _queryParams?: Record<string, string>;
+  private _headers: Record<string, string>;
 
-  private _headers?: Record<string, string>;
+  private _queryParams: Record<string, string>;
 
-  private _contentType?: string;
+  private _cookies: Record<string, string>;
 
-  private parsedBody?: unknown;
+  private _bodyPromise: Promise<unknown> | null = null;
 
   /**
-   * Constructs a new `Request` instance.
-   * @param req The underlying HTTP request object.
-   * @param res The HTTP response object.
+   * Initializes the Request object by synchronously parsing headers, query parameters, and cookies.
+   * @param req HttpRequest object from uWebSockets
+   * @param res HttpResponse object from uWebSockets
    */
   constructor(
     private readonly req: HttpRequest,
     private readonly res: HttpResponse,
-  ) {}
+  ) {
+    // Capture and store all necessary properties synchronously upon construction
+    this._url = req.getUrl();
+    this._method = req.getMethod().toLowerCase();
+    this._headers = this.parseHeadersSync();
+    this._queryParams = this.parseQueryParamsSync();
+    this._cookies = this.parseCookiesSync();
+  }
 
-  /**
-   * Retrieves the URL of the request.
-   * @returns The URL of the request.
-   */
+  /** Returns the full request URL. */
   get url(): string {
-    return (this._url ??= this.req.getUrl());
+    return this._url;
   }
 
-  /**
-   * Retrieves the HTTP method of the request (GET, POST, etc.).
-   * @returns The HTTP method (e.g., 'get', 'post').
-   */
+  /** Returns the HTTP method in lowercase (e.g., 'get', 'post'). */
   get method(): string {
-    return (this._method ??= this.req.getMethod().toLowerCase());
+    return this._method;
   }
 
-  /**
-   * Retrieves the query parameters as a key-value record.
-   * @returns An object representing the query parameters.
-   */
+  /** Returns an object of parsed query parameters. */
   get query(): Record<string, string> {
-    return (this._queryParams ??= this.parseQueryParams());
+    return this._queryParams;
   }
 
-  /**
-   * Retrieves the headers of the request as a key-value record.
-   * @returns An object representing the headers.
-   */
+  /** Returns an object of parsed request headers (all keys are lowercased). */
   get headers(): Record<string, string> {
-    return (this._headers ??= this.parseHeaders());
+    return this._headers;
   }
 
-  /**
-   * Retrieves the content type of the request.
-   * @returns The content type of the request.
-   */
+  /** Returns the Content-Type header (empty if not set). */
   get contentType(): string {
-    return (this._contentType ??=
-      this.req.getHeader('content-type')?.toLowerCase() ?? '');
+    return this.headers['content-type'] || '';
   }
 
-  /**
-   * Retrieves the cookies as a key-value record.
-   * @returns An object representing the cookies.
-   */
+  /** Returns an object of parsed cookies from the Cookie header. */
   get cookies(): Record<string, string> {
-    return this.parseCookies();
+    return this._cookies;
   }
 
-  /**
-   * Retrieves the IP address of the client making the request.
-   * @returns The IP address of the client.
-   */
+  /** Returns the remote client's IP address as a string. */
   get ip(): string {
     return Buffer.from(this.res.getRemoteAddressAsText()).toString();
   }
 
-  /**
-   * Retrieves the 'user-agent' header from the request.
-   * @returns The user-agent string of the client.
-   */
+  /** Returns the User-Agent header, if present. */
   get userAgent(): string {
-    return this.getHeader('user-agent');
+    return this.headers['user-agent'] || '';
   }
 
-  /**
-   * Retrieves the body of the request, parsed based on its content type.
-   * @returns A promise that resolves to the parsed body.
-   */
+  /** Lazily parses and returns the body of the request based on its Content-Type. */
   get body(): Promise<unknown> {
-    return this.parseBody();
+    if (!this._bodyPromise) {
+      this._bodyPromise = this.parseBody();
+    }
+    return this._bodyPromise;
   }
 
   /**
-   * Retrieves a specific parameter from the request (either query or path parameters).
-   * @param nameOrIndex The name or index of the parameter.
-   * @returns The parameter's value or undefined if not found.
+   * Returns a URL parameter by name or index.
+   * @param nameOrIndex Parameter name (string) or index (number)
    */
   param(nameOrIndex: string | number): string | undefined {
-    return this.req.getParameter(nameOrIndex);
+    return this.req.getParameter(nameOrIndex) || undefined;
   }
 
   /**
-   * Retrieves a specific header from the request.
-   * @param name The name of the header.
-   * @returns The value of the header or an empty string if not found.
+   * Returns all route parameters as an object with keys like "param0", "param1", etc.
+   */
+  get params(): Record<string, string> {
+    const params: Record<string, string> = {};
+    let index = 0;
+    let paramValue: string | undefined;
+    // Iteratively collect indexed parameters until undefined
+    // eslint-disable-next-line no-cond-assign, no-plusplus
+    while ((paramValue = this.req.getParameter(index++))) {
+      params[`param${index - 1}`] = paramValue;
+    }
+    return Object.keys(params).length ? params : {};
+  }
+
+  /**
+   * Retrieves a header by name (case-insensitive).
+   * @param name Header name
    */
   getHeader(name: string): string {
     return this.headers[name.toLowerCase()] || '';
   }
 
   /**
-   * Sets a header for the response.
-   * @param name The header name.
-   * @param value The header value.
+   * Sets or overwrites a response header using cork for batching.
+   * @param name Header name
+   * @param value Header value
    */
   setHeader(name: string, value: string): void {
-    this.res.writeHeader(name, value);
+    this.res.cork(() => {
+      this.res.writeHeader(name, value);
+    });
   }
 
   /**
-   * Removes a header from the response.
-   * @param name The header name to remove.
+   * Removes a header by setting it to an empty value.
+   * @param name Header name
    */
   removeHeader(name: string): void {
-    this.res.writeHeader(name, '');
+    this.res.cork(() => {
+      this.res.writeHeader(name, '');
+    });
   }
 
   /**
-   * Checks if a specific header is present in the request.
-   * @param name The name of the header to check.
-   * @returns True if the header exists, otherwise false.
+   * Checks whether a specific header is present.
+   * @param name Header name
    */
   hasHeader(name: string): boolean {
     return name.toLowerCase() in this.headers;
   }
 
-  // ================================
-  // Body Parsing
-  // ================================
-
   /**
-   * Parses the body of the request based on its content type.
-   * This function handles different content types like JSON, form data, and multipart data.
-   * @returns A promise that resolves to the parsed body.
+   * Reads and parses the body based on its Content-Type.
+   * - application/json → parsed JSON
+   * - application/x-www-form-urlencoded → key-value object
+   * - multipart/form-data → parsed fields
+   * - otherwise → raw string
    */
   private async parseBody(): Promise<unknown> {
-    if (this.parsedBody !== undefined) return this.parsedBody;
-
     const raw = await this.readBody();
+
+    if (raw === '') return {};
 
     if (this.contentType.includes('application/json')) {
       try {
-        this.parsedBody = JSON.parse(raw);
+        return JSON.parse(raw);
       } catch {
-        this.parsedBody = {};
+        return {};
       }
     } else if (this.contentType.includes('application/x-www-form-urlencoded')) {
-      this.parsedBody = Object.fromEntries(new URLSearchParams(raw));
+      const params = new URLSearchParams(raw);
+      return params.size > 0 ? Object.fromEntries(params) : {};
     } else if (this.contentType.includes('multipart/form-data')) {
       const boundaryMatch = this.contentType.match(/boundary=(.+)/);
-      this.parsedBody = boundaryMatch
+      const parsed = boundaryMatch
         ? this.parseMultipart(raw, boundaryMatch[1])
         : {};
+      return Object.keys(parsed).length ? parsed : {};
     } else {
-      this.parsedBody = raw;
+      return raw || {};
     }
-
-    return this.parsedBody;
   }
 
   /**
-   * Reads the raw body data from the request.
-   * @returns A promise that resolves to the raw body string.
+   * Reads the request body as a string from the HTTP stream.
+   * Collects chunks until the final chunk is received.
    */
   private readBody(): Promise<string> {
     return new Promise((resolve) => {
-      let raw = '';
+      const buffer: Buffer[] = [];
       this.res.onData((chunk, isLast) => {
-        raw += Buffer.from(chunk).toString();
-        if (isLast) resolve(raw);
+        buffer.push(Buffer.from(chunk));
+        if (isLast) resolve(Buffer.concat(buffer).toString());
       });
     });
   }
 
   /**
-   * Parses the multipart/form-data body.
-   * @param body The raw body data.
-   * @param boundary The boundary string to split the parts.
-   * @returns A record representing the parsed form fields.
+   * Parses multipart/form-data input using the provided boundary string.
+   * Extracts field names and values from each part.
+   * @param body Raw request body
+   * @param boundary Multipart boundary string
    */
   private parseMultipart(
     body: string,
@@ -236,26 +231,10 @@ export class Request {
   }
 
   /**
-   * Parses the query parameters from the URL.
-   * @returns A record representing the query parameters.
+   * Synchronously parses headers from the incoming request.
+   * Keys are normalized to lowercase.
    */
-  private parseQueryParams(): Record<string, string> {
-    const queryParams: Record<string, string> = {};
-    const raw = this.req.getQuery();
-
-    for (const pair of raw.split('&')) {
-      const [key, value] = pair.split('=').map(decodeURIComponent);
-      if (key) queryParams[key] = value ?? '';
-    }
-
-    return queryParams;
-  }
-
-  /**
-   * Parses the headers of the request.
-   * @returns A record representing the request headers.
-   */
-  private parseHeaders(): Record<string, string> {
+  private parseHeadersSync(): Record<string, string> {
     const headers: Record<string, string> = {};
     this.req.forEach((key, value) => {
       headers[key.toLowerCase()] = value;
@@ -264,10 +243,18 @@ export class Request {
   }
 
   /**
-   * Parses the cookies from the 'cookie' header.
-   * @returns A record representing the cookies.
+   * Synchronously parses query parameters from the URL.
    */
-  private parseCookies(): Record<string, string> {
+  private parseQueryParamsSync(): Record<string, string> {
+    const query = this.req.getQuery();
+    return query ? Object.fromEntries(new URLSearchParams(query)) : {};
+  }
+
+  /**
+   * Synchronously parses cookies from the Cookie header.
+   * Returns a dictionary of cookie names and values.
+   */
+  private parseCookiesSync(): Record<string, string> {
     const cookieHeader = this.req.getHeader('cookie') || '';
     return cookieHeader.split(';').reduce(
       (acc, pair) => {

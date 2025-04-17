@@ -26,14 +26,21 @@ module.exports = (() => {
   try {
     const moduleInstance = require(`./${filename}`);
 
-    // Eliminar los archivos .node que no sean el cargado
+    // Eliminar solo los archivos .node que no coincidan en plataforma y arquitectura
     const files = fs.readdirSync(dir);
     for (const file of files) {
-      if (file.endsWith(".node") && file !== filename) {
-        try {
-          fs.unlinkSync(path.join(dir, file));
-        } catch (err) {
-          console.warn(`Could not be eliminated ${file}:`, err.message);
+      if (
+        file.endsWith(".node") &&
+        file !== filename
+      ) {
+        const [, fPlatform, fArch] = file.split("_");
+
+        if (fPlatform !== process.platform || fArch !== process.arch) {
+          try {
+            fs.unlinkSync(path.join(dir, file));
+          } catch (err) {
+            console.warn(`Could not be eliminated ${file}:`, err.message);
+          }
         }
       }
     }
@@ -45,6 +52,7 @@ module.exports = (() => {
     );
   }
 })();
+
 
 
 module.exports.DeclarativeResponse = class DeclarativeResponse {

@@ -19,7 +19,10 @@ export class Response {
    * @returns The `Response` instance to allow method chaining.
    */
   public status(code: number): Response {
-    this.res.writeStatus(String(code)); // Set the status code for the response.
+    if (this.ended) return this;
+    this.res.cork(() => {
+      this.res.writeStatus(`${code}`);
+    });
     return this;
   }
 
@@ -30,7 +33,10 @@ export class Response {
    * @returns The `Response` instance to allow method chaining.
    */
   public setHeader(name: string, value: string): Response {
-    this.res.writeHeader(name, value); // Write the header to the response.
+    if (this.ended) return this;
+    this.res.cork(() => {
+      this.res.writeHeader(name, value);
+    });
     return this;
   }
 
@@ -39,17 +45,12 @@ export class Response {
    * @param msg The message to send in the response body.
    * @returns `true` if the message was successfully sent, otherwise `false`.
    */
-  public write(msg: string): boolean {
-    return this.res.write(msg); // Write the message to the response body.
-  }
-
-  /**
-   * Sends a message in the body of the response.
-   * @param msg The message to send in the response body.
-   * @returns `true` if the message was successfully sent, otherwise `false`.
-   */
-  public send(msg: string): boolean {
-    return this.res.write(msg); // Write the message to the response body.
+  write(data: string): this {
+    if (this.ended) return this;
+    this.res.cork(() => {
+      this.res.write(data);
+    });
+    return this;
   }
 
   /**
@@ -58,11 +59,14 @@ export class Response {
    * @returns `true` if the response was successfully ended, otherwise `false`.
    */
   public end(msg?: unknown): boolean {
-    if (this.ended) {
-      throw new Error('Error: Answer already closed'); // Throws an error if the response has already been ended.
-    }
-    this.ended = true; // Mark the response as ended.
-    return !!this.res.end((msg as string) ?? ''); // End the response with the optional message.
+    if (this.ended) throw new Error('Error: Answer already closed');
+
+    this.ended = true;
+    let success = false;
+    this.res.cork(() => {
+      success = !!this.res.end((msg as string) ?? '');
+    });
+    return success;
   }
 
   /**
@@ -73,8 +77,9 @@ export class Response {
    * @returns `true` if the response was successfully sent, otherwise `false`.
    */
   public json(data: unknown): boolean {
-    this.setHeader('Content-Type', 'application/json'); // Set the Content-Type header.
-    return this.end(JSON.stringify(data)); // Convert data to JSON and end the response.
+    if (this.ended) return false;
+    this.setHeader('Content-Type', 'application/json');
+    return this.end(JSON.stringify(data));
   }
 
   /**
@@ -84,9 +89,10 @@ export class Response {
    * @returns `true` if the response was successfully redirected, otherwise `false`.
    */
   public redirect(url: string): boolean {
-    this.status(302); // Set status to 302 (Redirect).
-    this.setHeader('Location', url); // Set the Location header for the redirection.
-    return this.end(`Redirecting to ${url}`); // End the response with the redirection message.
+    if (this.ended) return false;
+    this.status(302);
+    this.setHeader('Location', url);
+    return this.end(`Redirecting to ${url}`);
   }
 
   /**
@@ -103,21 +109,23 @@ export class Response {
     filePath: string,
     options?: { contentType?: string; encoding?: BufferEncoding | null },
   ): boolean {
+    if (this.ended) return false;
+
     try {
-      const data = fs.readFileSync(filePath, options?.encoding); // Read the file.
-      const ext = path.extname(filePath).toLowerCase(); // Get the file extension.
+      const data = fs.readFileSync(filePath, options?.encoding);
+      const ext = path.extname(filePath).toLowerCase();
 
-      // If no content type is provided, infer it from the file extension.
-      if (!options?.contentType) {
-        this.setHeader('Content-Type', this.inferContentType(ext));
-      } else {
-        this.setHeader('Content-Type', options.contentType); // Use the provided content type.
-      }
+      this.res.cork(() => {
+        this.setHeader(
+          'Content-Type',
+          options?.contentType || this.inferContentType(ext),
+        );
+      });
 
-      return this.end(data); // Send the file data and end the response.
+      return this.end(data);
     } catch (error) {
-      this.status(404); // Set status to 404 (File Not Found).
-      return this.end('File not found'); // Send an error message if the file was not found.
+      this.status(404);
+      return this.end('File not found');
     }
   }
 
