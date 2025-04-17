@@ -2,7 +2,9 @@
 
 <img src="./assets/banner.svg" height="300"/>
 
-**Froovo** is a lightweight, fast, and modular web server designed for modern applications. Built with TypeScript and optimized for performance and simplicity.
+**Froovo** is a lightweight, fast and modular web server designed for modern applications. It is built in TypeScript and optimized to deliver high performance with a simple yet powerful architecture.
+
+**Froovo** leverages a library written in C++ (based on uWebSockets.js) to achieve exceptional speeds and high efficiency in connection handling. Its main goal is to simplify development on this technology, adding practical functionalities and key enhancements to facilitate the creation of robust and scalable applications.
 
 **This project has a [CODE_OF_CONDUCT][].**
 
@@ -34,7 +36,6 @@ npm init -y
 ```bash
 git clone https://github.com/kkokotero/froovo.git
 cd froovo
-npm install
 ```
 
 **Install from npm:**
@@ -59,9 +60,9 @@ npm install froovo
 ## Quick Start
 
 ```ts
-import { Server, Request, Response } from "froovo/server";
+import froovo, { Request, Response } from "froovo";
 
-const app = new Server();
+const app = froovo();
 
 app.get("/", (req: Request, res: Response) => {
     res.end("Hello, World!");
@@ -87,7 +88,7 @@ Our goal is to provide just what you need to maximize performance and efficiency
 In the `examples/` folder you’ll find various use cases; here’s a WebSocket example:
 
 ```ts
-import { Server, Socket } from "froovo/server";
+import { Server, Socket } from "froovo";
 
 const app = new Server();
 

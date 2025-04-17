@@ -1,6 +1,6 @@
-import { Server } from "../dist/index.js";
+import froovo from "../dist/index.js";
 
-const app = new Server();
+const app = froovo();
 
 app.ws("/*", {
   open(ws) {

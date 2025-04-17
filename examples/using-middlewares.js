@@ -1,6 +1,6 @@
-import { Server } from "../dist/index.js";
+import froovo from "../dist/index.js";
 
-const app = new Server();
+const app = froovo();
 
 function middleware(request, _response, next) {
   console.log(`Middleware activated for route: ${request.url}`);

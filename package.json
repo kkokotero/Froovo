@@ -1,20 +1,12 @@
 {
   "name": "froovo",
-  "module": "index.ts",
+  "version": "1.1.0",
   "type": "module",
-  "version": "1.0.4",
-  "scripts": {
-    "build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json && npm run copy",
-    "lint": "eslint .",
-    "type-check": "tsc --noEmit",
-    "copy": "node utils/copyContent.cjs",
-    "upload": "npm run build && npm publish",
-    "prepublishOnly": "npm run build"
-  },
+  "module": "index.ts",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
-    "./server": {
+    ".": {
       "import": "./dist/index.js",
       "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
@@ -23,8 +15,18 @@
   "files": [
     "dist",
     "examples",
-    "assets"
+    "assets",
+    "README.md",
+    "LICENSE.txt"
   ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json && npm run copy",
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "copy": "node utils/copyContent.cjs",
+    "upload": "npm run build && npm publish",
+    "prepublishOnly": "npm run build"
+  },
   "author": "kkokotero",
   "license": "MIT",
   "private": false,
@@ -49,5 +51,17 @@
   },
   "peerDependencies": {
     "typescript": "^5"
-  }
+  },
+  "keywords": [
+    "froovo",
+    "framework",
+    "sinatra",
+    "web",
+    "http",
+    "rest",
+    "restful",
+    "router",
+    "app",
+    "api"
+  ]
 }
